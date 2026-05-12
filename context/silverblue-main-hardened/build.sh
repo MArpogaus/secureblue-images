@@ -1,0 +1,94 @@
+#!/bin/bash
+set -ouex pipefail
+
+### Notes
+# https://blue-build.org/blog/preferring-system-etc
+# /etc/ files in the image are copied to /usr/etc/ during deployment.
+# At run-time the /usr/etc/ directory then contains the original configuration of the image.
+
+### Install packages
+PACKAGES="${EXTRA_PACKAGES:-} zsh"
+# shellcheck disable=2086
+dnf5 install -y ${PACKAGES}
+
+# Clean dnf caches
+dnf clean all
+
+### Add public cosign key
+cd /tmp
+
+# Create a registry configuration file:
+cat >/etc/containers/registries.d/ghcr.io-marpogaus.yaml <<EOF
+docker:
+  ghcr.io/marpogaus:
+    use-sigstore-attachments: true
+EOF
+
+# Download and install the public key:
+curl -o /etc/pki/containers/marpogaus-cosign.pub https://raw.githubusercontent.com/marpogaus/containerfiles/main/cosign.pub
+
+# Update container policy to allow signed images from this repository
+POLICY_FILE="/etc/containers/policy.json"
+
+jq --arg image_registry "ghcr.io/marpogaus" \
+    --arg image_registry_key "marpogaus-cosign" \
+    '.transports.docker |=
+    { $image_registry: [
+        {
+            "type": "sigstoreSigned",
+            "keyPath": ("/etc/pki/containers/" + $image_registry_key + ".pub"),
+            "signedIdentity": {
+                "type": "matchRepository"
+            }
+        }
+    ] } + .' "${POLICY_FILE}" >POLICY.tmp
+
+cp POLICY.tmp /etc/containers/policy.json
+rm POLICY.tmp
+
+### Add custom distrobox config
+cd /tmp
+tee >>/etc/distrobox/distrobox.ini <<EOF
+
+# My custom images
+EOF
+
+for d in cider-fedora dev-fedora emacs-fedora latex-fedora; do
+    tee >>/etc/distrobox/distrobox.ini <<EOF
+[$d]
+image=ghcr.io/marpogaus/$d
+pull=true
+replace=true
+EOF
+done
+
+### Patch verification script
+sed -e 's:github.com/secureblue/secureblue:github.com/MArpogaus/containerfiles:' \
+    -e 's:ghcr.io/secureblue/:ghcr.io/marpogaus/:' \
+    -e "s:branch='live':branch='main':" \
+    -i /usr/libexec/secureblue/verify-provenance.sh
+
+### Enable systemd-homed
+authselect enable-feature with-systemd-homed
+systemctl enable systemd-homed
+
+### Copy additional system files
+rsync -rzP --chown=root:root --chmod=D700,F600 /ctx/sysroot/ /
+chmod 760 /etc/NetworkManager/dispatcher.d/50-wifi-wired-exclusive.sh
+chmod 644 /usr/lib/tmpfiles.d/*
+chmod -R u=rwX,og=rX /usr/share/factory
+
+### Add additional policy for usbguard and relabel system
+semodule --install=/ctx/usbguard-daemon.pp
+restorecon \
+    -e /dev \
+    -e /mnt \
+    -e /proc \
+    -e /run \
+    -e /sys \
+    -e /tmp \
+    -vRF /
+
+### Regenerate initramfs
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/secureblue/secureblue/refs/heads/live/files/scripts/regenerateinitramfs.sh)"
+lsinitrd

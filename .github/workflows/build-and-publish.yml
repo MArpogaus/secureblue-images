@@ -1,0 +1,42 @@
+name: Build and publish all container images
+
+on:
+  schedule:
+  - cron: 0 7 * * *
+  push:
+    branches: [main, dev]
+    # Publish semver tags as releases.
+    tags: [v*.*.*]
+     # don't rebuild if only documentation has changed
+    paths-ignore: ['**.md']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  secureblue-images:
+    name: Build and push secureblue container images
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+      id-token: write
+    strategy:
+      matrix:
+        image-name:
+        - cosmic-main-hardened
+        - cosmic-nvidia-hardened
+        - silverblue-main-hardened
+        - silverblue-nvidia-hardened
+        platform:
+        - linux/amd64
+      fail-fast: false
+    uses: MArpogaus/image-builder-action/.github/workflows/build-and-publish.yml@main
+    with:
+      image-name: ${{ matrix.image-name }}
+      containerfile: ./containerfiles/${{ matrix.image-name }}.containerfile
+      context: ./context
+      platform: ${{ matrix.platform }}
+      slsa-verify-source: github.com/secureblue/secureblue
+    secrets:
+      SIGNING_SECRET: ${{ secrets.SIGNING_SECRET }}
