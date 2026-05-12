@@ -1,13 +1,8 @@
 #!/bin/bash
 set -ouex pipefail
 
-### Notes
-# https://blue-build.org/blog/preferring-system-etc
-# /etc/ files in the image are copied to /usr/etc/ during deployment.
-# At run-time the /usr/etc/ directory then contains the original configuration of the image.
-
 ### Install packages
-PACKAGES="${EXTRA_PACKAGES:-} zsh"
+PACKAGES="${EXTRA_PACKAGES:-} zsh jq"
 # shellcheck disable=2086
 dnf5 install -y ${PACKAGES}
 
@@ -17,31 +12,35 @@ dnf clean all
 ### Add public cosign key
 cd /tmp
 
-# Create a registry configuration file:
-cat >/etc/containers/registries.d/ghcr.io-marpogaus.yaml <<EOF
+# Unified Public Key (MArpogaus)
+USER_KEY_URL="https://raw.githubusercontent.com/MArpogaus/secureblue-images/refs/heads/main/cosign.pub"
+USER_KEY_HASH="c2afac974df3bc064dc7a58125ee8247c4057ac620a9b01d57450c58d81c7dfd"
+
+# Verify and install the key
+curl -fLsS -o marpogaus.pub "${USER_KEY_URL}"
+echo "${USER_KEY_HASH}  marpogaus.pub" | sha256sum -c -
+mkdir -p /etc/pki/containers
+mv marpogaus.pub /etc/pki/containers/marpogaus.pub
+
+# Create a registry configuration file for the entire namespace
+cat >/etc/containers/registries.d/marpogaus.yaml <<EOF
 docker:
   ghcr.io/marpogaus:
     use-sigstore-attachments: true
 EOF
 
-# Download and install the public key:
-curl -o /etc/pki/containers/marpogaus-cosign.pub https://raw.githubusercontent.com/marpogaus/containerfiles/main/cosign.pub
-
-# Update container policy to allow signed images from this repository
+# Update container policy
 POLICY_FILE="/etc/containers/policy.json"
 
-jq --arg image_registry "ghcr.io/marpogaus" \
-    --arg image_registry_key "marpogaus-cosign" \
-    '.transports.docker |=
-    { $image_registry: [
+# Trust the entire ghcr.io/marpogaus namespace with the unified key
+jq '.transports.docker |=
+    ({ "ghcr.io/marpogaus": [
         {
             "type": "sigstoreSigned",
-            "keyPath": ("/etc/pki/containers/" + $image_registry_key + ".pub"),
-            "signedIdentity": {
-                "type": "matchRepository"
-            }
+            "keyPath": "/etc/pki/containers/marpogaus.pub",
+            "signedIdentity": { "type": "matchRepository" }
         }
-    ] } + .' "${POLICY_FILE}" >POLICY.tmp
+    ] } + .)' "${POLICY_FILE}" > POLICY.tmp
 
 cp POLICY.tmp /etc/containers/policy.json
 rm POLICY.tmp
@@ -63,7 +62,7 @@ EOF
 done
 
 ### Patch verification script
-sed -e 's:github.com/secureblue/secureblue:github.com/MArpogaus/containerfiles:' \
+sed -e 's:github.com/secureblue/secureblue:github.com/MArpogaus/secureblue-images:' \
     -e 's:ghcr.io/secureblue/:ghcr.io/marpogaus/:' \
     -e "s:branch='live':branch='main':" \
     -i /usr/libexec/secureblue/verify-provenance.sh
