@@ -25,7 +25,14 @@ docker:
 EOF
 
 # Download and install the public key:
-curl -o /etc/pki/containers/marpogaus-cosign.pub https://raw.githubusercontent.com/marpogaus/containerfiles/main/cosign.pub
+USER_KEY_URL="https://raw.githubusercontent.com/MArpogaus/secureblue-images/refs/heads/main/cosign.pub"
+USER_KEY_HASH="c2afac974df3bc064dc7a58125ee8247c4057ac620a9b01d57450c58d81c7dfd"
+
+# Verify and install the key
+curl -fLsS -o marpogaus.pub "${USER_KEY_URL}"
+echo "${USER_KEY_HASH}  marpogaus.pub" | sha256sum -c -
+mkdir -p /etc/pki/containers
+mv marpogaus.pub /etc/pki/containers/marpogaus-cosign.pub
 
 # Update container policy to allow signed images from this repository
 POLICY_FILE="/etc/containers/policy.json"
@@ -63,7 +70,7 @@ EOF
 done
 
 ### Patch verification script
-sed -e 's:github.com/secureblue/secureblue:github.com/MArpogaus/containerfiles:' \
+sed -e 's:github.com/secureblue/secureblue:github.com/MArpogaus/secureblue-images:' \
     -e 's:ghcr.io/secureblue/:ghcr.io/marpogaus/:' \
     -e "s:branch='live':branch='main':" \
     -i /usr/libexec/secureblue/verify-provenance.sh
