@@ -38,5 +38,6 @@ jobs:
       context: ./context
       platform: ${{ matrix.platform }}
       slsa-verify-source: github.com/secureblue/secureblue
+      cosign-public-key: https://raw.githubusercontent.com/secureblue/secureblue/refs/heads/live/cosign.pub
     secrets:
       SIGNING_SECRET: ${{ secrets.SIGNING_SECRET }}
