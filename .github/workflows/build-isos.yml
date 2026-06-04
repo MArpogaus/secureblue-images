@@ -26,6 +26,13 @@ jobs:
       fail-fast: false
 
     steps:
+    # https://github.com/macbre/push-to-ghcr/issues/12
+    - name: Lowercase Registry
+      id: registry_case
+      uses: ASzc/change-string-case-action@ecd1412d078f2e06e9eedcbaa6fcd988151c3f82 # v8
+      with:
+        string: ${{ env.REGISTRY }}
+  
     - name: Maximize build space
       uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
       with:
@@ -50,7 +57,7 @@ jobs:
       id: build
       uses: ublue-os/titanoboa@154e9332aeb79c52789e63eb941f73be99dbaf97 # v0.1
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ matrix.image }}:latest
+        image-ref: ${{ steps.registry_case.outputs.lowercase }}/${{ matrix.image }}:latest
         
     - name: Rename ISO
       id: rename
