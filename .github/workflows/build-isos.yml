@@ -55,7 +55,7 @@ jobs:
 
     - name: Build ISO
       id: build
-      uses: ublue-os/titanoboa@154e9332aeb79c52789e63eb941f73be99dbaf97 # v0.1
+      uses: ublue-os/titanoboa@840217d97bd0bc9a52466508c54d8dda5c5ba2fd # v0.2
       with:
         image-ref: ${{ steps.registry_case.outputs.lowercase }}/${{ matrix.image }}:latest
         
