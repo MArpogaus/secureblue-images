@@ -50,7 +50,7 @@ jobs:
         swap-storage: true
 
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
@@ -68,7 +68,7 @@ jobs:
         variant: Kinoite
         iso_name: ${{ env.IMAGE_NAME }}.iso
         enrollment_password: secureblue
-        secure_boot_key_url: https://github.com/secureblue/secureblue/raw/refs/heads/live/files/system/etc/pki/akmods/certs/akmods-secureblue.der
+        secure_boot_key_url: https://github.com/secureblue/secureblue/raw/0d8f58d7c6482e97a620a336643fadff55dcd352/files/system/etc/pki/akmods/certs/akmods-secureblue.der
         repos: /etc/yum.repos.d/fedora.repo /etc/yum.repos.d/fedora-updates.repo
 
     - name: Rename ISO
