@@ -7,7 +7,10 @@ set -ouex pipefail
 # At run-time the /usr/etc/ directory then contains the original configuration of the image.
 
 ### Install packages
-PACKAGES="${EXTRA_PACKAGES:-} zsh"
+# tailscaled is deliberately not enabled; opt in per host with: systemctl enable --now tailscaled
+curl -fLsS -o /etc/yum.repos.d/tailscale.repo https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+
+PACKAGES="${EXTRA_PACKAGES:-} zsh tmux tailscale"
 # shellcheck disable=2086
 dnf5 install -y ${PACKAGES}
 
