@@ -55,17 +55,15 @@ rm POLICY.tmp
 
 ### Add custom distrobox config
 # Assemble profiles are generated from the image matrix in MArpogaus/distrobox-images,
-# so this list cannot go stale the way the previous hand-written one did. pull/replace
-# are injected here rather than published upstream: that file describes the images,
-# this system wants its boxes refreshed from :latest on every assemble run.
+# so this list cannot go stale the way the previous hand-written one did. The
+# generated file already carries pull=true/replace=true.
 DISTROBOX_INI_URL="https://raw.githubusercontent.com/MArpogaus/distrobox-images/refs/heads/main/distrobox.ini"
 
 mkdir -p /etc/distrobox
 {
     echo
     echo "# My custom images, generated from ${DISTROBOX_INI_URL}"
-    curl -fLsS "${DISTROBOX_INI_URL}" |
-        sed -e '/^#/d' -e '/^\[/a pull=true\nreplace=true'
+    curl -fLsS "${DISTROBOX_INI_URL}" | sed '/^#/d'
 } >>/etc/distrobox/distrobox.ini
 
 ### Patch verification script
