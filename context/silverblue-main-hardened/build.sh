@@ -54,20 +54,17 @@ cp POLICY.tmp /etc/containers/policy.json
 rm POLICY.tmp
 
 ### Add custom distrobox config
-cd /tmp
-tee >>/etc/distrobox/distrobox.ini <<EOF
+# Assemble profiles are generated from the image matrix in MArpogaus/distrobox-images,
+# so this list cannot go stale the way the previous hand-written one did. The
+# generated file already carries pull=true/replace=true.
+DISTROBOX_INI_URL="https://raw.githubusercontent.com/MArpogaus/distrobox-images/refs/heads/main/distrobox.ini"
 
-# My custom images
-EOF
-
-for d in cider-fedora dev-fedora emacs-fedora latex-fedora; do
-    tee >>/etc/distrobox/distrobox.ini <<EOF
-[$d]
-image=ghcr.io/marpogaus/$d
-pull=true
-replace=true
-EOF
-done
+mkdir -p /etc/distrobox
+{
+    echo
+    echo "# My custom images, generated from ${DISTROBOX_INI_URL}"
+    curl -fLsS "${DISTROBOX_INI_URL}" | sed '/^#/d'
+} >>/etc/distrobox/distrobox.ini
 
 ### Patch verification script
 sed -e 's:github.com/secureblue/secureblue:github.com/MArpogaus/secureblue-images:' \
