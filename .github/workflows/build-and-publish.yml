@@ -26,6 +26,8 @@ jobs:
         image-name:
         - cosmic-main-hardened
         - cosmic-nvidia-hardened
+        - kinote-main-hardened
+        - kinote-nvidia-hardened
         - silverblue-main-hardened
         - silverblue-nvidia-hardened
         platform:
