@@ -28,9 +28,9 @@ jobs:
           extra-packages: ''
         - image-name: cosmic-nvidia-hardened
           extra-packages: ''
-        - image-name: kinote-main-hardened
+        - image-name: kinoite-main-hardened
           extra-packages: krdp
-        - image-name: kinote-nvidia-hardened
+        - image-name: kinoite-nvidia-hardened
           extra-packages: krdp
         - image-name: silverblue-main-hardened
           extra-packages: gnome-remote-desktop
