@@ -36,15 +36,13 @@ jobs:
           extra-packages: gnome-remote-desktop
         - image-name: silverblue-nvidia-hardened
           extra-packages: gnome-remote-desktop
-        platform:
-        - linux/amd64
       fail-fast: false
     uses: ./.github/workflows/build-and-publish-one-image.yml
     with:
       image-name: ${{ matrix.image-name }}
       containerfile: ./containerfiles/base.containerfile
       context: ./context
-      platform: ${{ matrix.platform }}
+      platform: linux/amd64
       build-args: |
         BASE_IMAGE=ghcr.io/secureblue/${{ matrix.image-name }}:latest
         EXTRA_PACKAGES=${{ matrix.extra-packages }}
